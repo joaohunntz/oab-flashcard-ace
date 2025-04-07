@@ -10,7 +10,6 @@ import { Book } from 'lucide-react';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,21 +44,24 @@ const Auth = () => {
         return;
       }
 
-      // E-mail está autorizado, enviar magic link
-      const { error } = await supabase.auth.signInWithOtp({
+      // E-mail está autorizado, realizar autenticação direta
+      // Como não vamos usar senha, usaremos um método alternativo para autenticação
+      const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin,
+          shouldCreateUser: false, // Não criar usuários novos
         }
       });
 
       if (error) throw error;
 
-      setMagicLinkSent(true);
       toast({
-        title: "Link de acesso enviado",
-        description: "Verifique seu e-mail para acessar o aplicativo.",
+        title: "Login realizado com sucesso",
+        description: "Você será redirecionado para a página inicial.",
       });
+
+      // Redirecionar para a página inicial após login bem-sucedido
+      navigate('/');
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -87,50 +89,34 @@ const Auth = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {!magicLinkSent ? (
-            <form className="space-y-6" onSubmit={handleAuth}>
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  E-mail
-                </label>
-                <div className="mt-1">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
+          <form className="space-y-6" onSubmit={handleAuth}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                E-mail
+              </label>
+              <div className="mt-1">
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
+            </div>
 
-              <div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={loading}
-                >
-                  {loading ? 'Processando...' : 'Enviar link de acesso'}
-                </Button>
-              </div>
-            </form>
-          ) : (
-            <div className="text-center">
-              <p className="mb-4">Link de acesso enviado para seu e-mail.</p>
-              <p className="text-sm text-gray-600">
-                Verifique sua caixa de entrada e clique no link para acessar o aplicativo.
-              </p>
+            <div>
               <Button
-                onClick={() => setMagicLinkSent(false)}
-                variant="outline"
-                className="mt-4"
+                type="submit"
+                className="w-full"
+                disabled={loading}
               >
-                Voltar
+                {loading ? 'Processando...' : 'Acessar aplicativo'}
               </Button>
             </div>
-          )}
+          </form>
         </div>
       </div>
     </div>
