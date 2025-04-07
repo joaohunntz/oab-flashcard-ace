@@ -46,6 +46,19 @@ const CreatePassword = () => {
         return;
       }
 
+      // Verificar se o usuário já existe na autenticação
+      const { data: authUser } = await supabase.auth.admin.getUserByEmail(email);
+      
+      if (authUser) {
+        toast({
+          title: "E-mail já registrado",
+          description: "Este e-mail já possui uma senha cadastrada. Por favor, tente fazer login.",
+          variant: "default",
+        });
+        navigate('/auth');
+        return;
+      }
+
       // E-mail verificado, mostrar formulário para criar senha
       setStep('create');
       toast({
@@ -69,34 +82,51 @@ const CreatePassword = () => {
 
     try {
       // Registrar novo usuário com o email verificado
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          // Garantir que o usuário será criado mesmo sem confirmação de email
+          data: {
+            email_confirmed: true
+          }
+        }
       });
 
-      if (error) throw error;
-
-      // Senha criada com sucesso
-      toast({
-        title: "Senha criada com sucesso",
-        description: "Agora você pode fazer login com seu e-mail e senha.",
-      });
-      
-      navigate('/auth');
-    } catch (error: any) {
-      if (error.message.includes('already registered')) {
-        toast({
-          title: "E-mail já registrado",
-          description: "Este e-mail já possui uma senha cadastrada. Por favor, tente fazer login.",
-        });
-        navigate('/auth');
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast({
+            title: "E-mail já registrado",
+            description: "Este e-mail já possui uma senha cadastrada. Por favor, tente fazer login.",
+          });
+          navigate('/auth');
+        } else {
+          throw error;
+        }
       } else {
-        toast({
-          title: "Erro",
-          description: error.message || "Ocorreu um erro ao criar a senha.",
-          variant: "destructive",
+        // Após registrar, tentar fazer login diretamente
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email,
+          password
         });
+
+        if (loginError) throw loginError;
+
+        // Senha criada com sucesso
+        toast({
+          title: "Senha criada com sucesso",
+          description: "Agora você pode acessar o sistema.",
+        });
+        
+        navigate('/home', { replace: true });
       }
+    } catch (error: any) {
+      console.error("Erro ao criar senha:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Ocorreu um erro ao criar a senha.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

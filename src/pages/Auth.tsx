@@ -51,7 +51,19 @@ const Auth = () => {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro de login:", error);
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Credenciais inválidas",
+            description: "E-mail ou senha incorretos. Por favor, tente novamente ou crie uma senha se ainda não o fez.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       // Login bem-sucedido, redirecionar para /home
       toast({
