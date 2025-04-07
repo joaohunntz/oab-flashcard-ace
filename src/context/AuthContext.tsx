@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { Session, User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 
 type AuthContextType = {
   session: Session | null;

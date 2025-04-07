@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,9 @@ const Auth = () => {
     // Verificar se o usuário já está logado
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) navigate('/home');
+      if (session) {
+        navigate('/home', { replace: true });
+      }
     };
     
     checkSession();
@@ -44,7 +47,6 @@ const Auth = () => {
       }
 
       // E-mail está autorizado, realizar autenticação direta
-      // Como não vamos usar senha, usaremos um método alternativo para autenticação
       const { data, error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -60,7 +62,7 @@ const Auth = () => {
       });
 
       // Redirecionar para a página home após login bem-sucedido
-      navigate('/home');
+      navigate('/home', { replace: true });
     } catch (error: any) {
       toast({
         title: "Erro",
