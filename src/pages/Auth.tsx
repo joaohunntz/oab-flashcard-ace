@@ -49,7 +49,7 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `https://oab-flashcard-ace.vercel.app/home`,
+          emailRedirectTo: `https://oab-flashcard-ace.vercel.app/callback`,
         }
       });
 
