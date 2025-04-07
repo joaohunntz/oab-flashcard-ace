@@ -9,9 +9,8 @@ import { Book } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,69 +28,38 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (isSignUp) {
-        // Fluxo de cadastro
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
+      // Verificar se o e-mail está na tabela users
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select()
+        .eq('email', email)
+        .single();
+
+      if (userError || !userData) {
+        toast({
+          title: "Acesso negado",
+          description: "Seu e-mail não está autorizado a acessar este aplicativo.",
+          variant: "destructive",
         });
-
-        if (error) throw error;
-
-        // Verificar se o e-mail está na tabela users
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select()
-          .eq('email', email)
-          .single();
-
-        if (userError || !userData) {
-          // Se o e-mail não estiver na tabela, fazer logout e mostrar erro
-          await supabase.auth.signOut();
-          toast({
-            title: "Acesso negado",
-            description: "Seu e-mail não está autorizado a acessar este aplicativo.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Cadastro realizado",
-            description: "Verifique seu e-mail para confirmar o cadastro.",
-          });
-        }
-      } else {
-        // Fluxo de login
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-
-        // Verificar se o e-mail está na tabela users
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select()
-          .eq('email', email)
-          .single();
-
-        if (userError || !userData) {
-          // Se o e-mail não estiver na tabela, fazer logout e mostrar erro
-          await supabase.auth.signOut();
-          toast({
-            title: "Acesso negado",
-            description: "Seu e-mail não está autorizado a acessar este aplicativo.",
-            variant: "destructive",
-          });
-        } else {
-          // Usuário está na tabela, redirecionar para a página principal
-          navigate('/');
-          toast({
-            title: "Login realizado com sucesso",
-            description: "Bem-vindo ao OAB Flashcard Ace!",
-          });
-        }
+        setLoading(false);
+        return;
       }
+
+      // E-mail está autorizado, enviar magic link
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        }
+      });
+
+      if (error) throw error;
+
+      setMagicLinkSent(true);
+      toast({
+        title: "Link de acesso enviado",
+        description: "Verifique seu e-mail para acessar o aplicativo.",
+      });
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -113,67 +81,56 @@ const Auth = () => {
           OAB Flashcard Ace
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          {isSignUp ? 'Crie sua conta' : 'Acesse sua conta'}
+          Acesse sua conta
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleAuth}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                E-mail
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
+          {!magicLinkSent ? (
+            <form className="space-y-6" onSubmit={handleAuth}>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  E-mail
+                </label>
+                <div className="mt-1">
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+              <div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? 'Processando...' : 'Enviar link de acesso'}
+                </Button>
               </div>
-            </div>
-
-            <div>
+            </form>
+          ) : (
+            <div className="text-center">
+              <p className="mb-4">Link de acesso enviado para seu e-mail.</p>
+              <p className="text-sm text-gray-600">
+                Verifique sua caixa de entrada e clique no link para acessar o aplicativo.
+              </p>
               <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
+                onClick={() => setMagicLinkSent(false)}
+                variant="outline"
+                className="mt-4"
               >
-                {loading ? 'Processando...' : isSignUp ? 'Cadastrar' : 'Entrar'}
+                Voltar
               </Button>
             </div>
-          </form>
-
-          <div className="mt-6">
-            <button
-              type="button"
-              className="text-sm text-oab-blue hover:text-oab-blue/80 w-full text-center"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
-            </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
