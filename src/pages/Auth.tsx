@@ -11,6 +11,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isRegister, setIsRegister] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,37 +29,65 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Verificar se o e-mail está na tabela users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select()
-        .eq('email', email)
-        .maybeSingle();
-
-      if (userError || !userData) {
-        toast({
-          title: "Acesso negado",
-          description: "Seu e-mail não está autorizado a acessar este aplicativo.",
-          variant: "destructive",
+      if (isRegister) {
+        // Registrar novo usuário
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
         });
-        setLoading(false);
-        return;
+
+        if (error) throw error;
+
+        // Inserir o email na tabela users (específico para este aplicativo)
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([{ email: email }]);
+
+        if (insertError) {
+          // Falha ao inserir na tabela users, reverter o registro
+          await supabase.auth.signOut();
+          throw insertError;
+        }
+
+        toast({
+          title: "Cadastro realizado",
+          description: "Sua conta foi criada com sucesso. Você pode fazer login agora.",
+        });
+        
+        setIsRegister(false); // Voltar para o formulário de login
+      } else {
+        // Verificar se o e-mail está na tabela users
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select()
+          .eq('email', email)
+          .maybeSingle();
+
+        if (userError || !userData) {
+          toast({
+            title: "Acesso negado",
+            description: "Seu e-mail não está autorizado a acessar este aplicativo.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        // E-mail está autorizado, fazer login com email/senha
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) throw error;
+
+        // Login bem-sucedido, redirecionar para /home
+        toast({
+          title: "Login bem-sucedido",
+          description: "Você foi autenticado com sucesso.",
+        });
+        navigate('/home', { replace: true });
       }
-
-      // E-mail está autorizado, fazer login com email/senha
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Login bem-sucedido, redirecionar para /home
-      toast({
-        title: "Login bem-sucedido",
-        description: "Você foi autenticado com sucesso.",
-      });
-      navigate('/home', { replace: true });
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -68,6 +97,10 @@ const Auth = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const toggleForm = () => {
+    setIsRegister(!isRegister);
   };
 
   return (
@@ -80,7 +113,7 @@ const Auth = () => {
           OAB Flashcard Ace
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Acesse sua conta
+          {isRegister ? "Crie sua conta" : "Acesse sua conta"}
         </p>
       </div>
 
@@ -113,7 +146,7 @@ const Auth = () => {
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete={isRegister ? "new-password" : "current-password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -127,10 +160,20 @@ const Auth = () => {
                 className="w-full"
                 disabled={loading}
               >
-                {loading ? 'Entrando...' : 'Entrar'}
+                {loading ? 'Processando...' : isRegister ? 'Cadastrar' : 'Entrar'}
               </Button>
             </div>
           </form>
+
+          <div className="mt-6">
+            <Button 
+              variant="link" 
+              className="w-full text-oab-blue" 
+              onClick={toggleForm}
+            >
+              {isRegister ? "Já tem uma conta? Faça login" : "Não tem uma conta? Cadastre-se"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
