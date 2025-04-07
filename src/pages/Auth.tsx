@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +15,7 @@ const Auth = () => {
     // Verificar se o usuário já está logado
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) navigate('/');
+      if (session) navigate('/home');
     };
     
     checkSession();
@@ -60,8 +59,8 @@ const Auth = () => {
         description: "Você será redirecionado para a página inicial.",
       });
 
-      // Redirecionar para a página inicial após login bem-sucedido
-      navigate('/');
+      // Redirecionar para a página home após login bem-sucedido
+      navigate('/home');
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -124,4 +123,3 @@ const Auth = () => {
 };
 
 export default Auth;
-
