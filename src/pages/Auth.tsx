@@ -16,7 +16,9 @@ const Auth = () => {
     // Verificar se o usuário já está logado
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("Auth page session check:", session?.user?.email);
       if (session) {
+        console.log("User already logged in, redirecting to /home");
         navigate('/home', { replace: true });
       }
     };
@@ -29,6 +31,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      console.log("Attempting authentication for:", email);
       // Verificar se o e-mail está na tabela users
       const { data: userData, error: userError } = await supabase
         .from('users')
@@ -62,8 +65,10 @@ const Auth = () => {
       });
 
       // Redirecionar para a página home após login bem-sucedido
+      console.log("Authentication successful, redirecting to /home");
       navigate('/home', { replace: true });
     } catch (error: any) {
+      console.error("Authentication error:", error.message);
       toast({
         title: "Erro",
         description: error.message || "Ocorreu um erro durante a autenticação.",
