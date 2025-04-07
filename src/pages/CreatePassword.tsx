@@ -46,10 +46,14 @@ const CreatePassword = () => {
         return;
       }
 
-      // Verificar se o usuário já existe na autenticação
-      const { data: authUser } = await supabase.auth.admin.getUserByEmail(email);
+      // Verificar se o usuário já existe na autenticação tentando fazer login sem senha
+      // Isso vai falhar, mas o erro nos dirá se o usuário existe ou não
+      const { error: signInError } = await supabase.auth.signInWithOtp({
+        email: email,
+      });
       
-      if (authUser) {
+      // Se o erro contiver "Email not confirmed", significa que o usuário já existe
+      if (signInError && signInError.message.includes('Email not confirmed')) {
         toast({
           title: "E-mail já registrado",
           description: "Este e-mail já possui uma senha cadastrada. Por favor, tente fazer login.",
