@@ -6,20 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 import { Book } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [verifiedEmail, setVerifiedEmail] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,82 +65,6 @@ const Auth = () => {
         description: error.message || "Ocorreu um erro durante a autenticação.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyEmail = async () => {
-    setLoading(true);
-
-    try {
-      // Verificar se o e-mail está na tabela users
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select()
-        .eq('email', email)
-        .maybeSingle();
-
-      if (userError || !userData) {
-        toast({
-          title: "E-mail não encontrado",
-          description: "Este e-mail não está cadastrado em nossa base de dados. Entre em contato para adquirir acesso.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // E-mail verificado, abrir diálogo para criar senha
-      setVerifiedEmail(email);
-      setShowPasswordDialog(true);
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro ao verificar o e-mail.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleCreatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      // Registrar novo usuário com o email verificado
-      const { data, error } = await supabase.auth.signUp({
-        email: verifiedEmail,
-        password,
-      });
-
-      if (error) throw error;
-
-      // Senha criada com sucesso
-      toast({
-        title: "Senha criada com sucesso",
-        description: "Agora você pode fazer login com seu e-mail e senha.",
-      });
-      
-      // Fechar o diálogo
-      setShowPasswordDialog(false);
-      setPassword('');
-    } catch (error: any) {
-      if (error.message.includes('already registered')) {
-        toast({
-          title: "E-mail já registrado",
-          description: "Este e-mail já possui uma senha cadastrada. Por favor, tente fazer login.",
-        });
-        setShowPasswordDialog(false);
-      } else {
-        toast({
-          title: "Erro",
-          description: error.message || "Ocorreu um erro ao criar a senha.",
-          variant: "destructive",
-        });
-      }
     } finally {
       setLoading(false);
     }
@@ -220,51 +135,15 @@ const Auth = () => {
           <div className="mt-6">
             <Button 
               variant="link" 
-              className="w-full text-oab-blue" 
-              onClick={handleVerifyEmail}
-              disabled={loading || !email}
+              className="w-full text-oab-blue"
+              onClick={() => navigate('/create-password')}
+              disabled={loading}
             >
               Já fez sua compra? Crie sua senha
             </Button>
           </div>
         </div>
       </div>
-
-      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Criar senha para {verifiedEmail}</DialogTitle>
-            <DialogDescription>
-              E-mail verificado com sucesso. Crie sua senha para acessar o aplicativo.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreatePassword} className="space-y-4">
-            <div>
-              <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
-                Nova senha
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="new-password"
-                  name="new-password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading || password.length < 6}
-            >
-              {loading ? 'Processando...' : 'Criar senha'}
-            </Button>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
