@@ -50,7 +50,7 @@ const Auth = () => {
         email,
         options: {
           shouldCreateUser: false, // Não criar usuários novos
-          emailRedirectTo: window.location.origin + '/home',
+          emailRedirectTo: 'https://oab-flashcard-ace.vercel.app/callback',
         }
       });
 
