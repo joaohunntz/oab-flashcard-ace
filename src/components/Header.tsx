@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Book } from 'lucide-react';
+import UserMenu from './UserMenu';
 
 const Header: React.FC = () => {
   return (
     <header className="bg-white shadow-sm py-4">
-      <div className="container mx-auto flex items-center justify-center px-4">
+      <div className="container mx-auto flex items-center justify-between px-4">
         <div className="flex items-center">
           <Book className="h-8 w-8 text-oab-gold mr-3" />
           <div>
@@ -13,6 +14,7 @@ const Header: React.FC = () => {
             <p className="text-sm text-gray-500">Seu assistente para a prova da OAB</p>
           </div>
         </div>
+        <UserMenu />
       </div>
     </header>
   );
