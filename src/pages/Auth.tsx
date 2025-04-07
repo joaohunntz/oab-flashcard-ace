@@ -49,7 +49,8 @@ const Auth = () => {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: window.location.origin + '/home',
+          // Use absolute URL including origin for proper redirect
+          emailRedirectTo: `${window.location.origin}/home`,
         }
       });
 
