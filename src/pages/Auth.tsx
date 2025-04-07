@@ -9,8 +9,8 @@ import { Book } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +23,7 @@ const Auth = () => {
     checkSession();
   }, [navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleMagicLinkLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -45,36 +45,29 @@ const Auth = () => {
         return;
       }
 
-      // E-mail está autorizado, fazer login com email/senha
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // E-mail está autorizado, enviar magic link
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password,
+        options: {
+          emailRedirectTo: window.location.origin + '/home',
+        }
       });
 
       if (error) {
-        console.error("Erro de login:", error);
-        if (error.message.includes('Invalid login credentials')) {
-          toast({
-            title: "Credenciais inválidas",
-            description: "E-mail ou senha incorretos. Por favor, tente novamente ou crie uma senha se ainda não o fez.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-        return;
+        console.error("Erro ao enviar magic link:", error);
+        throw error;
       }
 
-      // Login bem-sucedido, redirecionar para /home
+      // Magic link enviado com sucesso
+      setMagicLinkSent(true);
       toast({
-        title: "Login bem-sucedido",
-        description: "Você foi autenticado com sucesso.",
+        title: "Link de acesso enviado",
+        description: "Verifique seu e-mail e clique no link enviado para acessar o sistema.",
       });
-      navigate('/home', { replace: true });
     } catch (error: any) {
       toast({
         title: "Erro",
-        description: error.message || "Ocorreu um erro durante a autenticação.",
+        description: error.message || "Ocorreu um erro durante o envio do link de acesso.",
         variant: "destructive",
       });
     } finally {
@@ -92,68 +85,56 @@ const Auth = () => {
           OAB Flashcard Ace
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Acesse sua conta
+          {magicLinkSent ? 'Link de acesso enviado' : 'Acesse sua conta'}
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                E-mail
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Senha
-              </label>
-              <div className="mt-1">
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={loading}
+          {magicLinkSent ? (
+            <div className="text-center">
+              <p className="text-sm text-gray-600 mb-4">
+                Enviamos um link de acesso para <strong>{email}</strong>. 
+                Por favor, verifique sua caixa de entrada e clique no link para acessar o sistema.
+              </p>
+              <Button 
+                variant="outline" 
+                className="w-full mt-4"
+                onClick={() => setMagicLinkSent(false)}
               >
-                {loading ? 'Processando...' : 'Entrar'}
+                Tentar outro e-mail
               </Button>
             </div>
-          </form>
+          ) : (
+            <form className="space-y-6" onSubmit={handleMagicLinkLogin}>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  E-mail
+                </label>
+                <div className="mt-1">
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          <div className="mt-6">
-            <Button 
-              variant="link" 
-              className="w-full text-oab-blue"
-              onClick={() => navigate('/create-password')}
-              disabled={loading}
-            >
-              Já fez sua compra? Crie sua senha
-            </Button>
-          </div>
+              <div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading}
+                >
+                  {loading ? 'Processando...' : 'Enviar link de acesso'}
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
